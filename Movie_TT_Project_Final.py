@@ -1,5 +1,6 @@
 import random
 import requests
+import os
 
 print(" ______________________________ ")
 print("|         Welcome to...        |")
@@ -7,17 +8,17 @@ print("|      Movies Top Trumps!      |")
 print("|______________________________|")
 print("")
 
-
+#That's the base URL you get in TMDB
 API_URL = 'https://api.themoviedb.org/3'
-#That's the basic URL you get in TMDB
 API_KEY = 'faf74a5e4c12ee3f6f01e02f44bb84ff'
-#What you get after the basic URL is the movie genre, below you find the number referring to specific genres
+#What you get after the base URL is the movie genre, below you find the number referring to specific genres
 GENRE_IDS = {
     'action': 28,
     'comedy': 35,
     'horror': 27,
     'romance': 10749
 }
+
 #This is the code that will define the final 'url' called by the API, according to specific parameters
 def call_api(path, params):
     #API url + path + parameters that we choose
@@ -34,13 +35,13 @@ def call_api(path, params):
 
 #This is the function that extracts the movies according to a genre, going through 10 pages of results
 def fetch_movies(genre):
-    # maxpages refers to what we get when we do a request, we know that there is at least 10 pages so we set it to 11
-    maxpages = 11
+    # maxpages refers to what we get when we do a request, we know that there is at least 10 pages.
+    maxpages = 10
     movies = []
     page = 1
-    totalpages = 2
-    #start of while loop which says that as long as the number of pages returned is lower than totalpages and maxpages (which is True), then the results of the pages after page 1 will be returned.
-    while page < totalpages and page < maxpages:
+    totalpages = 1
+    #start of while loop which says that as long as the number of pages returned is mot more than totalpages or maxpages (which is True), then the results of the pages after page 1 will be returned.
+    while page <= totalpages and page <= maxpages:
         # the parameters to filter out adult content, but to include the genre of movies specified as well as the specific page of results
         params = {
             "include_adult": False,
@@ -56,6 +57,7 @@ def fetch_movies(genre):
         page += 1 
 
     return movies
+
 #This is the function that fetches a movie according to an 'id' as per the path below
 def fetch_movie_card(id):
     path = f'/movie/{id}'
@@ -68,6 +70,7 @@ def fetch_movie_card(id):
         'revenue': movie['revenue'],
         'audience_score': movie['vote_average']
     }
+
 #This is the function that randomises the choice of movie being returned
 def get_random_movie(movies):
     found = False
@@ -75,14 +78,19 @@ def get_random_movie(movies):
         selected = random.choice(movies)
         card = fetch_movie_card(selected['id'])
         found = True
+        #some movies are missing information so added this for loop to eliminate any that return 0 as a value.
         for value in card.values():
             if value == 0:
                 found = False
     return card
 
+game_result = 'GameResults.txt'
+if os.path.exists(game_result):
+    os.remove(game_result)
+
+win_counter = 0
 
 #Start of game with a loop counting to 4 from 1, to enable 3 rounds
-
 game_round = 4
 for i in range(1, game_round):
 
@@ -114,16 +122,24 @@ for i in range(1, game_round):
     if movie1_stat > movie2_stat:
         result_text = f'Round {i} - Player 1 wins'
         print('Player 1 wins!')
+        win_counter += 1
 
     elif movie2_stat > movie1_stat:
         result_text = f'Round {i} - Player 2 wins'
         print('Player 2 wins!')
+        win_counter -= 1
 
     else:
         result_text = f"Round {i} - It's a draw for Player 1 & 2"
         print('Draw!')
 
     #The part that enables the storage of the results for the 3 rounds
-    game_result = 'GameResults.txt'
     with open(game_result, 'a') as note_file:
         note_file.write(f"{result_text}\n")
+
+if win_counter > 0:
+    print('\nPlayer 1 wins the game!')
+elif win_counter < 0:
+    print('\nPlayer 2 wins the game!')
+else:
+    print('\nThe game is a draw')
